@@ -30,14 +30,14 @@ class FakeDb implements Db {
     const rows: any[] = [];
     if (text.startsWith('INSERT INTO payments')) {
       const [id, merchant_id, amount_cents, currency, status, provider_charge_id, customer_email] = params;
-      const row = { id, merchant_id, amount_cents, captured_cents: 0, currency, status, provider_charge_id, customer_email, created_at: new Date(), updated_at: new Date() };
+      const row = { id, merchant_id, amount_cents, captured_cents: 0, currency, status, provider_charge_id, provider_ref: provider_charge_id, customer_email, created_at: new Date(), updated_at: new Date() };
       this.payments[String(id)] = row;
       rows.push(row);
     } else if (text.startsWith('SELECT * FROM payments WHERE id')) {
       const row = this.payments[String(params[0])];
       if (row?.merchant_id === params[1]) rows.push(row);
-    } else if (text.startsWith('SELECT * FROM payments WHERE provider_charge_id')) {
-      const row = Object.values(this.payments).find((entry) => entry.provider_charge_id === params[0]);
+    } else if (text.startsWith('SELECT * FROM payments WHERE provider_ref')) {
+      const row = Object.values(this.payments).find((entry) => entry.provider_ref === params[0] || entry.provider_charge_id === params[0]);
       if (row) rows.push(row);
     } else if (text.startsWith('UPDATE payments')) {
       const row = this.payments[String(params[0])];

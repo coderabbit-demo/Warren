@@ -10,6 +10,7 @@ export interface PaymentRow {
   currency: string;
   status: Payment['status'];
   provider_charge_id: string | null;
+  provider_ref?: string | null;
   customer_email: string;
   created_at: Date;
   updated_at: Date;
@@ -23,7 +24,7 @@ export function mapPayment(row: PaymentRow): Payment {
     capturedCents: cents(Number(row.captured_cents)),
     currency: row.currency,
     status: row.status,
-    providerChargeId: row.provider_charge_id,
+    providerChargeId: row.provider_ref ?? row.provider_charge_id,
     customerEmail: row.customer_email,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -35,8 +36,8 @@ export class PaymentsRepository {
 
   async create(input: { id: string; merchantId: string; amountCents: number; currency: string; providerChargeId: string; customerEmail: string }): Promise<Payment> {
     const result = await this.db.query<PaymentRow>(
-      `INSERT INTO payments (id, merchant_id, amount_cents, currency, status, provider_charge_id, customer_email)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      `INSERT INTO payments (id, merchant_id, amount_cents, currency, status, provider_charge_id, provider_ref, customer_email)
+       VALUES ($1, $2, $3, $4, $5, $6, $6, $7) RETURNING *`,
       [input.id, input.merchantId, input.amountCents, input.currency, 'authorized', input.providerChargeId, input.customerEmail],
     );
     return mapPayment(result.rows[0]!);
@@ -48,7 +49,7 @@ export class PaymentsRepository {
   }
 
   async findByProviderChargeId(chargeId: string): Promise<Payment | null> {
-    const result = await this.db.query<PaymentRow>('SELECT * FROM payments WHERE provider_charge_id = $1', [chargeId]);
+    const result = await this.db.query<PaymentRow>('SELECT * FROM payments WHERE provider_ref = $1 OR provider_charge_id = $1', [chargeId]);
     return result.rows[0] ? mapPayment(result.rows[0]) : null;
   }
 
