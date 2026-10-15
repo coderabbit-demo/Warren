@@ -53,6 +53,9 @@ class FakeDb implements Db {
       rows.push(row);
     } else if (text.startsWith('SELECT * FROM refunds')) {
       rows.push(...Object.values(this.refunds).filter((row) => row.payment_id === params[0] && row.merchant_id === params[1]));
+    } else if (text.startsWith('SELECT COALESCE(SUM(amount_cents)')) {
+      const total = Object.values(this.refunds).filter((row) => row.payment_id === params[0] && row.status === params[1]).reduce((sum, row) => sum + Number(row.amount_cents), 0);
+      rows.push({ total_cents: total });
     } else if (text.startsWith('INSERT INTO invoices')) {
       const [id, merchant_id, number, customer_name, customer_email, total_cents, line_items] = params;
       const row = { id, merchant_id, number, customer_name, customer_email, total_cents, line_items: JSON.parse(String(line_items)), status: 'open', created_at: new Date() };
@@ -135,5 +138,43 @@ describe('Warren API', () => {
     const response = await request(app).post('/provider/paygrid/webhooks').set('content-type', 'application/json').set('x-paygrid-signature', signature).send(payload);
     expect(response.status).toBe(204);
     expect(Object.values(db.payments)[0]?.status).toBe('settled');
+  });
+
+  it('creates a valid partial refund and reports the total', async () => {
+    const { app, auth } = setup();
+    const created = await request(app).post('/payments').set(auth).set('Idempotency-Key', 'partial-create').send({
+      amountCents: 1200,
+      customer: { email: 'buyer@example.com' },
+      paymentMethod: { token: 'pm_demo_visa_4242' },
+    });
+    expect(created.status).toBe(201);
+    const paymentId = created.body.id as string;
+    const capture = await request(app).post(`/payments/${paymentId}/capture`).set(auth).set('Idempotency-Key', 'partial-capture').send({});
+    expect(capture.status).toBe(200);
+    const response = await request(app).post(`/payments/${paymentId}/refunds`).set(auth).send({ amountCents: 500, reason: 'One returned item' });
+    expect(response.status).toBe(201);
+    expect(response.body.amountCents).toBe(500);
+    expect(response.body.status).toBe('succeeded');
+    const payment = await request(app).get(`/payments/${paymentId}`).set(auth);
+    expect(payment.body.status).toBe('partially_refunded');
+    const summary = await request(app).get(`/payments/${paymentId}/refunds/summary`).set(auth);
+    expect(summary.body).toEqual({ paymentId, totalRefundedCents: 500, capturedCents: 1200 });
+  });
+
+  it('rejects a partial amount above the captured payment', async () => {
+    const { app, db, auth } = setup();
+    const created = await request(app).post('/payments').set(auth).set('Idempotency-Key', 'large-create').send({
+      amountCents: 900,
+      customer: { email: 'buyer@example.com' },
+      paymentMethod: { token: 'pm_demo_visa_4242' },
+    });
+    expect(created.status).toBe(201);
+    const paymentId = created.body.id as string;
+    const capture = await request(app).post(`/payments/${paymentId}/capture`).set(auth).set('Idempotency-Key', 'large-capture').send({});
+    expect(capture.status).toBe(200);
+    const response = await request(app).post(`/payments/${paymentId}/refunds`).set(auth).send({ amountCents: 901 });
+    expect(response.status).toBe(422);
+    expect(response.body.code).toBe('refund_exceeds_capture');
+    expect(Object.values(db.refunds)).toHaveLength(0);
   });
 });
