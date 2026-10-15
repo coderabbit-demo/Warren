@@ -27,16 +27,31 @@ function mapRefund(row: RefundRow): Refund {
 export class RefundsRepository {
   constructor(private readonly db: Db) {}
 
-  async create(input: { id: string; paymentId: string; merchantId: string; amountCents: number; reason?: string }): Promise<Refund> {
+  async create(input: {
+    id: string;
+    paymentId: string;
+    merchantId: string;
+    amountCents: number;
+    reason?: string;
+  }): Promise<Refund> {
     const result = await this.db.query<RefundRow>(
       `INSERT INTO refunds (id, payment_id, merchant_id, amount_cents, reason, status)
        VALUES ($1, $2, $3, $4, $5, 'succeeded') RETURNING *`,
-      [input.id, input.paymentId, input.merchantId, input.amountCents, input.reason ?? null],
+      [
+        input.id,
+        input.paymentId,
+        input.merchantId,
+        input.amountCents,
+        input.reason ?? null,
+      ],
     );
     return mapRefund(result.rows[0]!);
   }
 
-  async listForPayment(paymentId: string, merchantId: string): Promise<Refund[]> {
+  async listForPayment(
+    paymentId: string,
+    merchantId: string,
+  ): Promise<Refund[]> {
     const result = await this.db.query<RefundRow>(
       'SELECT * FROM refunds WHERE payment_id = $1 AND merchant_id = $2 ORDER BY created_at DESC',
       [paymentId, merchantId],
