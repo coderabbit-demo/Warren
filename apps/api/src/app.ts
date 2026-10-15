@@ -19,14 +19,25 @@ import { paymentsRouter } from './routes/payments.js';
 import { refundsRouter } from './routes/refunds.js';
 import { invoicesRouter } from './routes/invoices.js';
 import { merchantsRouter } from './routes/merchants.js';
+import { merchantWebhooksRouter } from './routes/merchantWebhooks.js';
+import { WebhookTester } from './services/webhookTester.js';
 
 export interface AppDependencies {
   db: Db;
   config: Config;
   provider?: ProviderV1Client;
+  webhookFetcher?: typeof fetch;
 }
 
-export function createApp({ db, config, provider = new ProviderV1Client({ baseUrl: config.PAYGRID_BASE_URL, apiKey: config.PAYGRID_API_KEY }) }: AppDependencies) {
+export function createApp({
+  db,
+  config,
+  provider = new ProviderV1Client({
+    baseUrl: config.PAYGRID_BASE_URL,
+    apiKey: config.PAYGRID_API_KEY,
+  }),
+  webhookFetcher = fetch,
+}: AppDependencies) {
   const app = express();
   const payments = new PaymentsRepository(db);
   const refunds = new RefundsRepository(db);
@@ -37,15 +48,26 @@ export function createApp({ db, config, provider = new ProviderV1Client({ baseUr
   const refundService = new RefundService(payments, refunds, provider, ledger);
   const invoiceService = new InvoiceService(invoices);
   const requireAuth = makeRequireAuth(config);
-  const withIdempotency = makeWithIdempotency(new IdempotencyKeysRepository(db));
+  const withIdempotency = makeWithIdempotency(
+    new IdempotencyKeysRepository(db),
+  );
 
   app.use(providerWebhooksRouter(paymentService, config));
   app.use(express.json({ limit: '64kb' }));
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
-  app.use(paymentsRouter(paymentService, payments, requireAuth, withIdempotency));
+  app.use(
+    paymentsRouter(paymentService, payments, requireAuth, withIdempotency),
+  );
   app.use(refundsRouter(refundService, refunds, requireAuth, withIdempotency));
   app.use(invoicesRouter(invoiceService, invoices, requireAuth));
   app.use(merchantsRouter(merchants, requireAuth));
+  app.use(
+    merchantWebhooksRouter(
+      merchants,
+      new WebhookTester(webhookFetcher),
+      requireAuth,
+    ),
+  );
   app.use(errorHandler);
   return app;
 }
