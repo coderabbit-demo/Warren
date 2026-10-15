@@ -4,8 +4,16 @@ import type { V2Charge, V2Refund, V2WebhookEvent } from './types.js';
 import { PayGridV2ProtocolError } from './errors.js';
 
 export function mapV2Charge(charge: V2Charge): ProviderCharge {
-  const state = charge.state === 'captured' ? 'captured' : charge.state === 'declined' ? 'failed' : 'authorized';
-  const amount = charge.state === 'captured' ? charge.captured.amount : charge.authorized.amount;
+  const state =
+    charge.state === 'captured'
+      ? 'captured'
+      : charge.state === 'declined'
+        ? 'failed'
+        : 'authorized';
+  const amount =
+    charge.state === 'captured'
+      ? charge.captured.amount
+      : charge.authorized.amount;
   if (!Number.isSafeInteger(amount) || amount < 0) {
     throw new PayGridV2ProtocolError('PayGrid V2 returned an invalid amount');
   }
@@ -20,11 +28,13 @@ export function mapV2Charge(charge: V2Charge): ProviderCharge {
 export function mapV2Refund(refund: V2Refund): ProviderRefund {
   return {
     providerRef: refund.id,
-    state: refund.state === 'failed' ? 'failed' : 'succeeded',
+    state: refund.state,
   };
 }
 
-export function mapV2Webhook(event: V2WebhookEvent): { chargeId: string; status: 'authorized' | 'captured' | 'failed' } | null {
+export function mapV2Webhook(
+  event: V2WebhookEvent,
+): { chargeId: string; status: 'authorized' | 'captured' | 'failed' } | null {
   switch (event.type) {
     case 'charge.authorized':
       return { chargeId: event.data.charge_reference, status: 'authorized' };

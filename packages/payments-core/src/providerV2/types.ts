@@ -1,5 +1,5 @@
 export type V2ChargeState = 'created' | 'authorized' | 'captured' | 'declined';
-export type V2RefundState = 'queued' | 'succeeded' | 'failed';
+export type V2RefundState = 'succeeded' | 'failed';
 
 export interface V2Money {
   amount: number;
@@ -48,7 +48,11 @@ export interface V2ErrorResponse {
 
 export interface V2WebhookEvent {
   id: string;
-  type: 'charge.authorized' | 'charge.captured' | 'charge.declined' | 'refund.succeeded';
+  type:
+    | 'charge.authorized'
+    | 'charge.captured'
+    | 'charge.declined'
+    | 'refund.succeeded';
   data: {
     charge_reference: string;
     amount: V2Money;
