@@ -19,6 +19,7 @@ import { paymentsRouter } from './routes/payments.js';
 import { refundsRouter } from './routes/refunds.js';
 import { invoicesRouter } from './routes/invoices.js';
 import { merchantsRouter } from './routes/merchants.js';
+import { authRouter } from './routes/auth.js';
 
 export interface AppDependencies {
   db: Db;
@@ -41,6 +42,7 @@ export function createApp({ db, config, provider = new ProviderV1Client({ baseUr
 
   app.use(providerWebhooksRouter(paymentService, config));
   app.use(express.json({ limit: '64kb' }));
+  app.use(authRouter(config));
   app.get('/health', (_req, res) => res.json({ status: 'ok' }));
   app.use(paymentsRouter(paymentService, payments, requireAuth, withIdempotency));
   app.use(refundsRouter(refundService, refunds, requireAuth, withIdempotency));

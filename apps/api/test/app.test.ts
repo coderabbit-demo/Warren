@@ -12,6 +12,7 @@ const config: Config = {
   PORT: 3000,
   DATABASE_URL: 'postgres://example.com/warren',
   JWT_SECRET: 'example-jwt-secret-for-tests',
+  JWT_REFRESH_SECRET: 'example-refresh-secret-for-tests',
   PAYGRID_API_KEY: 'wrn_demo_4f9c2e7a1b8d3f60c5e9a2b7d4f1c8e3',
   PAYGRID_BASE_URL: 'https://paygrid.example.com',
   PROVIDER_WEBHOOK_SECRET: 'example-provider-secret-for-tests',
@@ -94,6 +95,23 @@ function setup() {
 }
 
 describe('Warren API', () => {
+  it('refreshes an active dashboard session', async () => {
+    const { app } = setup();
+    const refreshToken = jwt.sign({ mid: merchantId, typ: 'refresh', scope: ['payments:write'] }, config.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+    const response = await request(app).post('/auth/refresh').send({ refreshToken });
+    expect(response.status).toBe(200);
+    expect(response.body.expiresIn).toBe(900);
+    const access = jwt.verify(response.body.accessToken, config.JWT_SECRET) as { mid: string; typ: string };
+    expect(access.mid).toBe(merchantId);
+    expect(access.typ).toBe('access');
+  });
+
+  it('rejects an expired session refresh token', async () => {
+    const { app } = setup();
+    const refreshToken = jwt.sign({ mid: merchantId, typ: 'refresh' }, config.JWT_REFRESH_SECRET, { expiresIn: -1 });
+    const response = await request(app).post('/auth/refresh').send({ refreshToken });
+    expect(response.status).toBe(401);
+  });
   it('creates, captures, and refunds a payment', async () => {
     const { app, db, auth } = setup();
     const created = await request(app).post('/payments').set(auth).set('Idempotency-Key', 'create-1').send({ amountCents: 1200, currency: 'USD', customer: { email: 'buyer@example.com' }, paymentMethod: { token: 'pm_demo_visa_4242' } });
