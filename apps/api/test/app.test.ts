@@ -136,4 +136,12 @@ describe('Warren API', () => {
     expect(response.status).toBe(204);
     expect(Object.values(db.payments)[0]?.status).toBe('settled');
   });
+
+  it('rejects a provider event with an invalid signature', async () => {
+    const { app } = setup();
+    const payload = JSON.stringify({ charge_id: 'ch_demo', state: 'settled' });
+    const response = await request(app).post('/provider/paygrid/webhooks').set('content-type', 'application/json').set('x-paygrid-signature', '0'.repeat(64)).send(payload);
+    expect(response.status).toBe(401);
+    expect(response.body.code).toBe('unauthorized');
+  });
 });
