@@ -8,11 +8,11 @@ An HTTP request enters `app.ts`. The provider webhook route reads raw bytes befo
 
 ## Payments
 
-The payment API accepts an amount in cents, a currency, customer details, and a payment method token or legacy card object. `PaymentService` asks PayGrid to create an authorization. The returned charge ID is stored on the payment. Capturing calls PayGrid and moves the payment to `settled`. The capture endpoint requires an idempotency key. The key store records the response for a repeated request. The payment row stores the captured amount independently from the authorized amount.
+The payment API accepts an amount in cents, a currency, customer details, and a payment method token or legacy card object. `PaymentService` asks PayGrid to create an authorization. The returned charge ID is stored on the payment. Capturing calls PayGrid and moves the payment to `captured`. The capture endpoint requires an idempotency key. The key store records the response for a repeated request. The payment row stores the captured amount independently from the authorized amount.
 
 ## Refunds
 
-`RefundService` issues a full refund against a settled payment. The refund route uses the same idempotency wrapper as capture. The refund repository records the provider result. The payment then moves to `refunded`. Refunds are listed by payment and merchant.
+`RefundService` issues a full refund against a captured payment. The refund route uses the same idempotency wrapper as capture. The refund repository records the provider result. The payment then moves to `refunded`. Refunds are listed by payment and merchant.
 
 ## Invoices
 

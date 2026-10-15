@@ -1,7 +1,7 @@
 export const PaymentStatus = {
   Pending: 'pending',
   Authorized: 'authorized',
-  Settled: 'settled',
+  Captured: 'captured',
   Refunded: 'refunded',
   Failed: 'failed',
 } as const;
