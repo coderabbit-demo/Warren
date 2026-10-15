@@ -1,0 +1,1 @@
+{"name":"@warren/webhook-dispatcher","private":true,"type":"module","exports":"./src/index.ts","dependencies":{"@warren/payments-core":"*"}}
