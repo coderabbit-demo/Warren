@@ -43,4 +43,12 @@ export class RefundsRepository {
     );
     return result.rows.map(mapRefund);
   }
+
+  async sumForPayment(paymentId: string): Promise<number> {
+    const result = await this.db.query<{ total_cents: number }>(
+      'SELECT COALESCE(SUM(amount_cents), 0) AS total_cents FROM refunds WHERE payment_id = $1 AND status = $2',
+      [paymentId, 'succeeded'],
+    );
+    return Number(result.rows[0]?.total_cents ?? 0);
+  }
 }
