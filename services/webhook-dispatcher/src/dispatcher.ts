@@ -17,12 +17,16 @@ export interface EventStore {
 }
 
 export class Dispatcher {
-  constructor(private readonly store: EventStore, private readonly fetcher: typeof fetch = fetch) {}
+  constructor(
+    private readonly store: EventStore,
+    private readonly fetcher: typeof fetch = fetch,
+    private readonly filter: (event: PendingEvent) => boolean = shouldNotify,
+  ) {}
 
   async dispatchPending(): Promise<number> {
     let delivered = 0;
     for (const event of await this.store.pending()) {
-      if (!shouldNotify(event)) continue;
+      if (!this.filter(event)) continue;
       const payload = JSON.stringify({ id: event.id, type: toEventType(event.status), data: { paymentId: event.paymentId } });
       await withRetry(async () => {
         const response = await this.fetcher(event.webhookUrl, {

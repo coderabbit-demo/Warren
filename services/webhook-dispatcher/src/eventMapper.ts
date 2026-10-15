@@ -8,7 +8,8 @@ export function shouldNotify(row: { status: string }): boolean {
 
 export function toEventType(status: string): string {
   switch (status) {
-    case 'settled': return 'payment.settled';
+    case PaymentStatus.Captured: return 'payment.captured';
+    case PaymentStatus.Authorized: return 'payment.authorized';
     case PaymentStatus.Refunded: return 'payment.refunded';
     case PaymentStatus.Failed: return 'payment.failed';
     default: throw new Error(`No event type for status ${status}`);
