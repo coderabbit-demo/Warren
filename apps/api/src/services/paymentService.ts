@@ -29,15 +29,15 @@ export class PaymentService {
       throw new DomainError('Payment is not authorized', 409, 'invalid_payment_state');
     }
     await this.provider.capture(payment.providerChargeId, payment.amountCents);
-    const captured = await this.payments.setStatus(payment.id, merchantId, PaymentStatus.Settled, payment.amountCents);
-    await this.ledger.recordStatusChange(payment.id, merchantId, PaymentStatus.Settled, payment.amountCents);
+    const captured = await this.payments.setStatus(payment.id, merchantId, PaymentStatus.Captured, payment.amountCents);
+    await this.ledger.recordStatusChange(payment.id, merchantId, PaymentStatus.Captured, payment.amountCents);
     return captured;
   }
 
   async recordProviderStatus(chargeId: string, status: Payment['status']): Promise<void> {
     const payment = await this.payments.findByProviderChargeId(chargeId);
     if (!payment || payment.status === status) return;
-    const capturedCents = status === PaymentStatus.Settled ? payment.amountCents : payment.capturedCents;
+    const capturedCents = status === PaymentStatus.Captured ? payment.amountCents : payment.capturedCents;
     await this.payments.setStatus(payment.id, payment.merchantId, status, capturedCents);
     await this.ledger.recordStatusChange(payment.id, payment.merchantId, status, capturedCents);
   }

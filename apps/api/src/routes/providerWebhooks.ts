@@ -8,7 +8,7 @@ import { PaymentStatus } from '@warren/payments-core';
 
 const webhookSchema = z.object({
   charge_id: z.string(),
-  state: z.enum([PaymentStatus.Authorized, PaymentStatus.Settled, PaymentStatus.Failed]),
+  state: z.enum([PaymentStatus.Authorized, 'settled', PaymentStatus.Failed]),
 });
 
 export function providerWebhooksRouter(service: PaymentService, config: Config) {
@@ -18,7 +18,7 @@ export function providerWebhooksRouter(service: PaymentService, config: Config) 
     const expected = createHmac('sha256', config.PROVIDER_WEBHOOK_SECRET).update(rawBody).digest('hex');
     if (req.header('x-paygrid-signature') !== expected) throw new UnauthorizedError('bad signature');
     const event = webhookSchema.parse(JSON.parse(rawBody.toString('utf8')));
-    await service.recordProviderStatus(event.charge_id, event.state);
+    await service.recordProviderStatus(event.charge_id, event.state === 'settled' ? PaymentStatus.Captured : event.state);
     res.status(204).send();
   });
   return router;

@@ -12,8 +12,8 @@ export class RefundService {
   async createFullRefund(merchantId: string, paymentId: string, reason?: string): Promise<Refund> {
     const payment = await this.payments.findByIdForMerchant(paymentId, merchantId);
     if (!payment) throw new NotFoundError('payment');
-    if (payment.status !== PaymentStatus.Settled || !payment.providerChargeId) {
-      throw new DomainError('Payment is not settled', 409, 'invalid_payment_state');
+    if (payment.status !== PaymentStatus.Captured || !payment.providerChargeId) {
+      throw new DomainError('Payment is not captured', 409, 'invalid_payment_state');
     }
     await this.provider.refund(payment.providerChargeId, payment.capturedCents);
     const refund = await this.refunds.create({ id: randomUUID(), paymentId, merchantId, amountCents: payment.capturedCents, reason });

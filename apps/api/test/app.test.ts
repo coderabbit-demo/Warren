@@ -100,7 +100,7 @@ describe('Warren API', () => {
     expect(created.status).toBe(201);
     const paymentId = created.body.id as string;
     const captured = await request(app).post(`/payments/${paymentId}/capture`).set(auth).set('Idempotency-Key', 'capture-1').send({});
-    expect(captured.body.status).toBe('settled');
+    expect(captured.body.status).toBe('captured');
     const fetched = await request(app).get(`/payments/${paymentId}`).set(auth);
     expect(fetched.body.capturedCents).toBe(1200);
     const refunded = await request(app).post(`/payments/${paymentId}/refund`).set(auth).set('Idempotency-Key', 'refund-1').send({ reason: 'Customer request' });
@@ -134,6 +134,6 @@ describe('Warren API', () => {
     const signature = createHmac('sha256', config.PROVIDER_WEBHOOK_SECRET).update(payload).digest('hex');
     const response = await request(app).post('/provider/paygrid/webhooks').set('content-type', 'application/json').set('x-paygrid-signature', signature).send(payload);
     expect(response.status).toBe(204);
-    expect(Object.values(db.payments)[0]?.status).toBe('settled');
+    expect(Object.values(db.payments)[0]?.status).toBe('captured');
   });
 });
