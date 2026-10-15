@@ -14,17 +14,17 @@ export function subtract(a: Cents, b: Cents): Cents {
   return cents(a - b);
 }
 
-export function isPositive(value: Cents): boolean {
+export function isPositiveCents(value: Cents): boolean {
   return value > 0;
 }
 
-export function formatUsd(value: Cents): string {
+export function formatUsdCents(value: Cents): string {
   const sign = value < 0 ? '-' : '';
   const absolute = Math.abs(value);
   return `${sign}$${Math.floor(absolute / 100)}.${String(absolute % 100).padStart(2, '0')}`;
 }
 
-export function fromDecimalString(value: string): Cents {
+export function parseDecimalCents(value: string): Cents {
   const match = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(value);
   if (!match) throw new RangeError('Invalid decimal amount');
   const whole = Number(match[2]);
