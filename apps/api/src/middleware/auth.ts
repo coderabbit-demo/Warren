@@ -29,8 +29,9 @@ export function makeRequireAuth(config: Config) {
       }
       const token = req.header('authorization')?.replace(/^Bearer\s+/i, '');
       if (!token) throw new UnauthorizedError();
-      const claims = jwt.verify(token, config.JWT_SECRET) as { mid?: string; scope?: string[] };
+      const claims = jwt.verify(token, config.JWT_SECRET, { maxAge: '15m' }) as { mid?: string; scope?: string[]; typ?: string };
       if (!claims.mid) throw new UnauthorizedError();
+      if (claims.typ === 'refresh') throw new UnauthorizedError();
       req.auth = { merchantId: claims.mid, scopes: claims.scope ?? [] };
       next();
     } catch (error) {
