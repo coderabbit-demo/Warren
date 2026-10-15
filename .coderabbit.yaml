@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+# Warren review configuration: tuned for signal over volume.
+language: "en-US"
+tone_instructions: "Be concise and direct. Lead with the risk and why it matters, then one concrete fix. No praise, no emojis, and no comments on formatting or naming; linters handle style."
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: false
+  changed_files_summary: true
+  sequence_diagrams: true
+  estimate_code_review_effort: true
+  assess_linked_issues: true
+  related_issues: true
+  related_prs: true
+  suggested_labels: true
+  auto_apply_labels: false
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+  in_progress_fortune: false
+  poem: false
+  path_filters:
+    - "!**/dist/**"
+    - "!**/coverage/**"
+    - "!**/package-lock.json"
+    - "!scripts/workshop/**"
+    - "!WORKSHOP.md"
+  path_instructions:
+    - path: "packages/money/**"
+      instructions: |
+        Money is always integer minor units (cents). Flag floating-point arithmetic on money, conversions that can lose precision, and rounding without an explicit rule. See docs/standards/money.md.
+    - path: "apps/api/src/routes/**"
+      instructions: |
+        Every handler must scope reads and writes to req.auth.merchantId. Money-moving endpoints must enforce Idempotency-Key via withIdempotency. Never log request bodies. See docs/standards/money.md and docs/standards/security.md.
+    - path: "apps/api/src/repositories/**"
+      instructions: |
+        All SQL must be parameterized. Flag any interpolation of request input into SQL text.
+    - path: "services/webhook-dispatcher/**"
+      instructions: |
+        Outbound requests go to merchant-controlled URLs. Every payload must be signed with the configured secret.
+    - path: "**/*.test.ts"
+      instructions: |
+        Focus on missing edge cases for money and authorization. Do not comment on test naming or formatting.
+    - path: "**/*.md"
+      instructions: |
+        Only flag factual errors or broken links. Do not comment on wording or style.
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: false
+  pre_merge_checks:
+    docstrings:
+      mode: "off"
+    title:
+      mode: "off"
+    description:
+      mode: "warning"
+    issue_assessment:
+      mode: "warning"
+  tools:
+    languagetool:
+      enabled: false
+    markdownlint:
+      enabled: false
+
+chat:
+  art: false
+  auto_reply: true
+
+knowledge_base:
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "docs/standards/*.md"
+  learnings:
+    scope: "auto"
