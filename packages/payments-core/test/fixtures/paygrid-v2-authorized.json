@@ -1,0 +1,15 @@
+{
+  "id": "evt_charge_authorized",
+  "reference": "v2_charge_demo",
+  "state": "authorized",
+  "authorized": {
+    "amount": 1250,
+    "currency": "USD"
+  },
+  "captured": {
+    "amount": 0,
+    "currency": "USD"
+  },
+  "created_at": "2026-10-15T12:00:00Z",
+  "updated_at": "2026-10-15T12:00:00Z"
+}
